@@ -1,4 +1,9 @@
-# jison-lex
+# ts-jison-lex
+
+This is a fork of Zach Carter <zach@carter.name>'s [jison module](https://www.npmjs.com/package/jison-lex) tweaked to use just enough templates to make typescript compilers tollerate the generated parser.
+
+Original Jison README (modulo compilation examples):
+====
 A lexical analyzer generator used by [jison](http://jison.org). It takes a lexical grammar definition (either in JSON or Bison's lexical grammar format) and outputs a JavaScript lexer.
 
 ## install
