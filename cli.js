@@ -21,10 +21,18 @@ var opts = require("nomnom")
     help: 'Filename and base module name of the generated parser'
   })
   .option('module-type', {
-    abbr: 't',
+    abbr: 'm',
     default: 'commonjs',
     metavar: 'TYPE',
     help: 'The type of module to generate (commonjs, js)'
+  })
+  .option('template', {
+      abbr : 't',
+  default:
+      'javascript',
+      metavar : 'TYPE',
+      help : 'Built-in (javascript, typescript) or path to template' +
+          'directory with "error" and "parser" files'
   })
   .option('version', {
     abbr: 'V',

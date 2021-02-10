@@ -1,0 +1,8 @@
+// produce the lexer rule set which is active for the currently active lexer condition state
+function _currentRules () {
+  if (this.conditionStack.length && this.conditionStack[this.conditionStack.length - 1]) {
+    return this.conditions[this.conditionStack[this.conditionStack.length - 1]].rules;
+  } else {
+    return this.conditions["INITIAL"].rules;
+  }
+}

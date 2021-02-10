@@ -1,0 +1,5 @@
+// When called from action, caches matched text and appends it on next action
+function more () {
+  this._more = true;
+  return this;
+}

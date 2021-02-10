@@ -1,0 +1,4 @@
+// alias for begin(condition)
+function pushState (condition) {
+  this.begin(condition);
+}

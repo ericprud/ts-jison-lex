@@ -1,0 +1,22 @@
+[
+  "parseError",
+  "setInput",
+  "input",
+  "unput",
+  "more",
+  "reject",
+  "less",
+  "pastInput",
+  "upcomingInput",
+  "showPosition",
+  "test_match",
+  "next",
+  "lex",
+  "begin",
+  "popState",
+  "_currentRules",
+  "topState",
+  "pushState",
+  "stateStackSize",
+  "options"
+]

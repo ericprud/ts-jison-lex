@@ -1,0 +1,4 @@
+// retain first n characters of the match
+function less (n) {
+  this.unput(this.match.slice(n));
+}

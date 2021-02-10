@@ -3,6 +3,8 @@
 
 "use strict";
 
+var Fs = require('fs');
+var Path = require('path');
 var lexParser = require('lex-parser');
 var version = require('./package.json').version;
 
@@ -109,7 +111,7 @@ function buildActions (dict, tokens) {
         dict.rules.push([".", "console.log(yytext);"]);
     }
 
-    this.rules = prepareRules(dict.rules, dict.macros, actions, tokens && toks, this.conditions, this.options["case-insensitive"]);
+    this.rules = prepareRules(dict.rules, dict.macros, actions, tokens && toks, this.conditions, this.options && this.options["case-insensitive"]);
     var fun = actions.join("\n");
     "yytext yyleng yylineno yylloc".split(' ').forEach(function (yy) {
         fun = fun.replace(new RegExp("\\b(" + yy + ")\\b", "g"), "yy_.$1");
@@ -118,22 +120,46 @@ function buildActions (dict, tokens) {
     return "function anonymous(yy,yy_,$avoiding_name_collisions,YY_START) {" + fun + "\n}";
 }
 
-function RegExpLexer (dict, input, tokens) {
+function RegExpLexer (dict, input, tokens, config = {}) {
     var opts = processGrammar(dict, tokens);
-    var source = generateModuleBody(opts);
-    var lexer = eval(source);
+    var lexerText = generateModuleBody(opts, config.template);
 
-    lexer.yy = {};
+    // lexerText.yy = "{}";
+
+    if (config.generate) return {
+        generate: function () { return generateFromOpts(lexerText, opts); },
+        generateModule: function () { return generateModule(lexerText, opts); },
+        generateCommonJSModule: function () { return generateCommonJSModule(lexerText, opts); },
+        generateAMDModule: function () { return generateAMDModule(lexerText, opts); },
+    };
+
+    // return Object.keys(lexerText.strs).reduce((acc, k) => {
+    //   try {
+    //     acc[k] = eval(lexerText.strs[k]);
+    //   } catch (e) {
+    //     console.warn('k:', k, '\ne:', e, '\nstrs:', Object.keys(lexerText.strs), '\n!!:', lexerText.strs[k]);
+    //   }
+    //     return acc;
+    // }, {});
+
+    var code = "({\n" + Object.keys(lexerText.strs)
+        .map((k) =>
+             k + ":" + lexerText.strs[k]
+            ).join(",\n") + "\n})";
+
+    var lexer = eval(code);
+
     if (input) {
         lexer.setInput(input);
     }
-
-    lexer.generate = function () { return generateFromOpts(opts); };
-    lexer.generateModule = function () { return generateModule(opts); };
-    lexer.generateCommonJSModule = function () { return generateCommonJSModule(opts); };
-    lexer.generateAMDModule = function () { return generateAMDModule(opts); };
-
     return lexer;
+
+    function readTemplate (name) {
+        return require('fs').readFileSync(
+            Path.join(template, name),
+            "utf8"
+        ).replace(/\s*$/, ''); // trim trailing whitespace
+    }
 }
 
 RegExpLexer.prototype = {
@@ -460,10 +486,10 @@ RegExpLexer.prototype = {
 
 
 // generate lexer source from a grammar
-function generate (dict, tokens) {
+function generate (lexer, dict, tokens) {
     var opt = processGrammar(dict, tokens);
 
-    return generateFromOpts(opt);
+    return generateFromOpts(lexer, opt);
 }
 
 // process the grammar and build final data structures and functions
@@ -474,9 +500,11 @@ function processGrammar(dict, tokens) {
     }
     dict = dict || {};
 
-    opts.options = dict.options || {};
-    opts.moduleType = opts.options.moduleType;
-    opts.moduleName = opts.options.moduleName;
+    if ("options" in dict) {
+        opts.options = dict.options;
+        opts.moduleType = opts.options.moduleType;
+        opts.moduleName = opts.options.moduleName;
+    }
 
     opts.conditions = prepareStartConditions(dict.startConditions);
     opts.conditions.INITIAL = {rules:[],inclusive:true};
@@ -489,76 +517,57 @@ function processGrammar(dict, tokens) {
 }
 
 // Assemble the final source from the processed grammar
-function generateFromOpts (opt) {
+function generateFromOpts (lexer, opt) {
     var code = "";
 
     if (opt.moduleType === 'commonjs') {
-        code = generateCommonJSModule(opt);
+        code = generateCommonJSModule(lexer, opt);
     } else if (opt.moduleType === 'amd') {
-        code = generateAMDModule(opt);
+        code = generateAMDModule(lexer, opt);
     } else {
-        code = generateModule(opt);
+        code = generateModule(lexer, opt);
     }
 
     return code;
 }
 
-function generateModuleBody (opt) {
-    var functionDescriptions = {
-        setInput: "resets the lexer, sets new input",
-        input: "consumes and returns one char from the input",
-        unput: "unshifts one char (or a string) into the input",
-        more: "When called from action, caches matched text and appends it on next action",
-        reject: "When called from action, signals the lexer that this rule fails to match the input, so the next matching rule (regex) should be tested instead.",
-        less: "retain first n characters of the match",
-        pastInput: "displays already matched input, i.e. for error messages",
-        upcomingInput: "displays upcoming input, i.e. for error messages",
-        showPosition: "displays the character position where the lexing error occurred, i.e. for error messages",
-        test_match: "test the lexed token: return FALSE when not a match, otherwise return token",
-        next: "return next match in input",
-        lex: "return next match that has a token",
-        begin: "activates a new lexer condition state (pushes the new lexer condition state onto the condition stack)",
-        popState: "pop the previously active lexer condition state off the condition stack",
-        _currentRules: "produce the lexer rule set which is active for the currently active lexer condition state",
-        topState: "return the currently active lexer condition state; when an index argument is provided it produces the N-th previous condition state, if available",
-        pushState: "alias for begin(condition)",
-        stateStackSize: "return the number of states currently on the stack"
-    };
-    var out = "({\n";
-    var p = [];
-    var descr;
-    for (var k in RegExpLexer.prototype) {
-        if (RegExpLexer.prototype.hasOwnProperty(k) && k.indexOf("generate") === -1) {
-            // copy the function description as a comment before the implementation; supports multi-line descriptions
-            descr = "\n";
-            if (functionDescriptions[k]) {
-                descr += "// " + functionDescriptions[k].replace(/\n/g, "\n\/\/ ") + "\n";
-            }
-            p.push(descr + k + ":" + (RegExpLexer.prototype[k].toString() || '""'));
-        }
-    }
-    out += p.join(",\n");
-
+function generateModuleBody (opt, templateParm) {
+    var templates = Path.join(__dirname, 'templates', (templateParm || 'javascript'));
+    var sources = JSON.parse(Fs.readFileSync(Path.join(templates, "COMPONENTS.json")));
+    var strs = sources.reduce(function (acc, source) {
+      acc[source] = Fs.readFileSync(Path.join(templates, source), "utf-8");
+      return acc;
+    }, {EOF: "1"});
+    const lexer = {strs};
     if (opt.options) {
-        out += ",\noptions: " + JSON.stringify(opt.options);
+        lexer.options = JSON.stringify(opt.options);
     }
+    lexer.lexerType = Fs.readFileSync(Path.join(templates, "lexerType"), "utf-8");
 
-    out += ",\nperformAction: " + String(opt.performAction);
-    out += ",\nrules: [" + opt.rules + "]";
-    out += ",\nconditions: " + JSON.stringify(opt.conditions);
-    out += "\n})";
-
-    return out;
+    lexer.strs.performAction = String(opt.performAction);
+    lexer.strs.rules = "[" + opt.rules + "]";
+    lexer.strs.conditions = JSON.stringify(opt.conditions);
+    return lexer;
 }
 
-function generateModule(opt) {
+function generateModule(lexer, opt, templateParm) {
     opt = opt || {};
+    var template = Path.join(__dirname, 'templates', (templateParm || 'javascript'));
 
-    var out = "/* generated by jison-lex " + version + " */";
+    var out = "/* generated by ts-jison-lex " + version + " */";
     var moduleName = opt.moduleName || "lexer";
 
-    out += "\nvar " + moduleName + " = (function(){\nvar lexer = "
-          + generateModuleBody(opt);
+    out += "\nvar " + moduleName + " = (function(){\nvar lexer" + lexer.lexerType + " = "
+          // + generateModuleBody(opt)
+          + "({\n\n" + Object.keys(lexer.strs)
+          .map(k => {
+              let str = lexer.strs[k];
+              str = str.replace(/\s*$/s, '');
+              const m = str.match(/^(\/\/[^\n]*\n)(.*)$/s);
+              return m
+                  ? m[1] + k + ":" + m[2]
+                  : k + ":" + str;
+          }).join(",\n\n") + "\n})";
 
     if (opt.moduleInclude) {
         out += ";\n" + opt.moduleInclude;
@@ -569,11 +578,14 @@ function generateModule(opt) {
     return out;
 }
 
-function generateAMDModule(opt) {
-    var out = "/* generated by jison-lex " + version + " */";
+function generateAMDModule(lexer, opt) {
+    var out = "/* generated by ts-jison-lex " + version + " */";
 
     out += "define([], function(){\nvar lexer = "
-          + generateModuleBody(opt);
+          // + generateModuleBody(opt);
+          + Object.keys(lexer)
+          .filter(k => k.indexOf('generate') !== 0) // @@ i know!
+          .map(k => k + ":" + lexer[k]).join(",\n");
 
     if (opt.moduleInclude) {
         out += ";\n" + opt.moduleInclude;
@@ -585,13 +597,13 @@ function generateAMDModule(opt) {
     return out;
 }
 
-function generateCommonJSModule(opt) {
+function generateCommonJSModule(lexer, opt) {
     opt = opt || {};
 
     var out = "";
     var moduleName = opt.moduleName || "lexer";
 
-    out += generateModule(opt);
+    out += generateModule(lexer, opt);
     out += "\nexports.lexer = " + moduleName;
     out += ";\nexports.lex = function () { return " + moduleName + ".lex.apply(lexer, arguments); };";
     return out;

@@ -1,0 +1,9 @@
+// pop the previously active lexer condition state off the condition stack
+function popState () {
+  var n = this.conditionStack.length - 1;
+  if (n > 0) {
+    return this.conditionStack.pop();
+  } else {
+    return this.conditionStack[0];
+  }
+}

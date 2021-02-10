@@ -1,0 +1,4 @@
+// return the number of states currently on the stack
+function stateStackSize () {
+  return this.conditionStack.length;
+}
