@@ -353,7 +353,8 @@ exports["test module generator from constructor"] = function() {
            ["x", "return 'X';" ],
            ["y", "return 'Y';" ],
            ["$", "return 'EOF';" ]
-       ]
+       ],
+       options: { generate: true }
     };
 
     var input = "xxyx";
@@ -380,7 +381,7 @@ exports["test module generator"] = function() {
 
     var input = "xxyx";
 
-    var lexer_ = new RegExpLexer(dict);
+    var lexer_ = new RegExpLexer(dict, undefined, undefined, { generate: true });
     var lexerSource = lexer_.generateModule();
     eval(lexerSource);
     lexer.setInput(input);
@@ -410,7 +411,7 @@ exports["test generator with more complex lexer"] = function() {
 
     var input = 'x"fgjdrtj\\"sdfsdf"x';
 
-    var lexer_ = new RegExpLexer(dict);
+    var lexer_ = new RegExpLexer(dict, undefined, undefined, { generate: true });
     var lexerSource = lexer_.generateModule();
     eval(lexerSource);
     lexer.setInput(input);
@@ -432,7 +433,7 @@ exports["test commonjs module generator"] = function() {
 
     var input = "xxyx";
 
-    var lexer_ = new RegExpLexer(dict);
+    var lexer_ = new RegExpLexer(dict, undefined, undefined, { generate: true });
     var lexerSource = lexer_.generateCommonJSModule();
     var exports = {};
     eval(lexerSource);
@@ -451,12 +452,12 @@ exports["test amd module generator"] = function() {
            ["x", "return 'X';" ],
            ["y", "return 'Y';" ],
            ["$", "return 'EOF';" ]
-       ]
+        ]
     };
 
     var input = "xxyx";
 
-    var lexer_ = new RegExpLexer(dict);
+    var lexer_ = new RegExpLexer(dict, undefined, undefined, { generate: true });
     var lexerSource = lexer_.generateAMDModule();
 
     var lexer;

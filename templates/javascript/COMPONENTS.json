@@ -17,6 +17,5 @@
   "_currentRules",
   "topState",
   "pushState",
-  "stateStackSize",
-  "options"
+  "stateStackSize"
 ]

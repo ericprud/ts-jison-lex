@@ -13,7 +13,8 @@
     "generator",
     "lexer",
     "flex",
-    "tokenizer"
+    "tokenizer",
+    "typescript"
   ],
   "repository": {
     "type": "git",

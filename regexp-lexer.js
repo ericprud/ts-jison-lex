@@ -56,7 +56,7 @@ function prepareRules(rules, macros, actions, tokens, startConditions, caseless)
         }
         newRules.push(m);
         if (typeof rules[i][1] === 'function') {
-            rules[i][1] = String(rules[i][1]).replace(/^\s*function \(\)\s?\{/, '').replace(/\}\s*$/, '');
+            rules[i][1] = String(rules[i][1]).replace(/^\s*function\s*\(\s*\)\s*{/, '').replace(/}\s*$/, '');
         }
         action = rules[i][1];
         if (tokens && action.match(/return '[^']+'/)) {
@@ -486,10 +486,11 @@ RegExpLexer.prototype = {
 
 
 // generate lexer source from a grammar
-function generate (lexer, dict, tokens) {
+function generate (dict, tokens) {
     var opt = processGrammar(dict, tokens);
+    var lexerText = generateModuleBody(opt, null);
 
-    return generateFromOpts(lexer, opt);
+    return generateFromOpts(lexerText, opt);
 }
 
 // process the grammar and build final data structures and functions
@@ -500,11 +501,9 @@ function processGrammar(dict, tokens) {
     }
     dict = dict || {};
 
-    if ("options" in dict) {
-        opts.options = dict.options;
-        opts.moduleType = opts.options.moduleType;
-        opts.moduleName = opts.options.moduleName;
-    }
+    opts.options = dict.options || {};
+    opts.moduleType = opts.options.moduleType;
+    opts.moduleName = opts.options.moduleName;
 
     opts.conditions = prepareStartConditions(dict.startConditions);
     opts.conditions.INITIAL = {rules:[],inclusive:true};
@@ -537,7 +536,7 @@ function generateModuleBody (opt, templateParm) {
     var strs = sources.reduce(function (acc, source) {
       acc[source] = Fs.readFileSync(Path.join(templates, source), "utf-8");
       return acc;
-    }, {EOF: "1"});
+    }, {EOF: "1", options:JSON.stringify(opt.options)});
     const lexer = {strs};
     if (opt.options) {
         lexer.options = JSON.stringify(opt.options);
@@ -583,9 +582,15 @@ function generateAMDModule(lexer, opt) {
 
     out += "define([], function(){\nvar lexer = "
           // + generateModuleBody(opt);
-          + Object.keys(lexer)
-          .filter(k => k.indexOf('generate') !== 0) // @@ i know!
-          .map(k => k + ":" + lexer[k]).join(",\n");
+          + "({\n\n" + Object.keys(lexer.strs)
+          .map(k => {
+              let str = lexer.strs[k];
+              str = str.replace(/\s*$/s, '');
+              const m = str.match(/^(\/\/[^\n]*\n)(.*)$/s);
+              return m
+                  ? m[1] + k + ":" + m[2]
+                  : k + ":" + str;
+          }).join(",\n\n") + "\n})";
 
     if (opt.moduleInclude) {
         out += ";\n" + opt.moduleInclude;
