@@ -1,4 +1,0 @@
-// activates a new lexer condition state (pushes the new lexer condition state onto the condition stack)
-function begin (condition) {
-  this.conditionStack.push(condition);
-}

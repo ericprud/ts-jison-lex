@@ -1,7 +1,0 @@
-function parseError (str: string, hash: {[key: string]: any}) {
-  if (this.yy.parser) {
-    this.yy.parser.parseError(str, hash);
-  } else {
-    throw new Error(str);
-  }
-}

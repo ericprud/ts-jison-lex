@@ -1,6 +1,0 @@
-// displays the character position where the lexing error occurred, i.e. for error messages
-function showPosition () {
-  var pre = this.pastInput();
-  var c = new Array(pre.length + 1).join("-");
-  return pre + this.upcomingInput() + "\n" + c + "^";
-}

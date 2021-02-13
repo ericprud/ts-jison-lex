@@ -1,9 +1,0 @@
-// return the currently active lexer condition state; when an index argument is provided it produces the N-th previous condition state, if available
-function topState (n) {
-  n = this.conditionStack.length - 1 - Math.abs(n || 0);
-  if (n >= 0) {
-    return this.conditionStack[n];
-  } else {
-    return "INITIAL";
-  }
-}

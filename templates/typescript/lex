@@ -1,9 +1,0 @@
-// return next match that has a token
-function lex () {
-  var r = this.next();
-  if (r) {
-    return r;
-  } else {
-    return this.lex();
-  }
-}
