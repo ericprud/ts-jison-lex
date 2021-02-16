@@ -6,7 +6,7 @@
   },
   "name": "ts-jison-lex",
   "description": "A lightly-typescriptified lexical analyzer generator used by ts-jison",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "keywords": [
     "jison",
     "parser",
