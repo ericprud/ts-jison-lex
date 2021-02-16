@@ -360,14 +360,14 @@ exports["test module generator from constructor"] = function() {
     var input = "xxyx";
 
     var lexerSource = RegExpLexer.generate(dict);
-    eval(lexerSource);
-    lexer.setInput(input);
+    const generated = eval(lexerSource);
+    generated.setInput(input);
 
-    assert.equal(lexer.lex(), "X");
-    assert.equal(lexer.lex(), "X");
-    assert.equal(lexer.lex(), "Y");
-    assert.equal(lexer.lex(), "X");
-    assert.equal(lexer.lex(), "EOF");
+    assert.equal(generated.lex(), "X");
+    assert.equal(generated.lex(), "X");
+    assert.equal(generated.lex(), "Y");
+    assert.equal(generated.lex(), "X");
+    assert.equal(generated.lex(), "EOF");
 };
 
 exports["test module generator"] = function() {
@@ -383,14 +383,14 @@ exports["test module generator"] = function() {
 
     var lexer_ = new RegExpLexer(dict, undefined, undefined, { generate: true });
     var lexerSource = lexer_.generateModule();
-    eval(lexerSource);
-    lexer.setInput(input);
+    const generated = eval(lexerSource);
+    generated.setInput(input);
 
-    assert.equal(lexer.lex(), "X");
-    assert.equal(lexer.lex(), "X");
-    assert.equal(lexer.lex(), "Y");
-    assert.equal(lexer.lex(), "X");
-    assert.equal(lexer.lex(), "EOF");
+    assert.equal(generated.lex(), "X");
+    assert.equal(generated.lex(), "X");
+    assert.equal(generated.lex(), "Y");
+    assert.equal(generated.lex(), "X");
+    assert.equal(generated.lex(), "EOF");
 };
 
 exports["test generator with more complex lexer"] = function() {
@@ -413,13 +413,13 @@ exports["test generator with more complex lexer"] = function() {
 
     var lexer_ = new RegExpLexer(dict, undefined, undefined, { generate: true });
     var lexerSource = lexer_.generateModule();
-    eval(lexerSource);
-    lexer.setInput(input);
+    const generated = eval(lexerSource);
+    generated.setInput(input);
 
-    assert.equal(lexer.lex(), "X");
-    assert.equal(lexer.lex(), "STRING");
-    assert.equal(lexer.lex(), "X");
-    assert.equal(lexer.lex(), "EOF");
+    assert.equal(generated.lex(), "X");
+    assert.equal(generated.lex(), "STRING");
+    assert.equal(generated.lex(), "X");
+    assert.equal(generated.lex(), "EOF");
 };
 
 exports["test commonjs module generator"] = function() {
